@@ -1,20 +1,30 @@
 package com.example.leschuk.geoquiz;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Checkable;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 public class QuizActivity extends AppCompatActivity {
 
+    private static final String TAG = "QuizActivity";
+    private static final String KEY_INDEX = "index";
+
     private Button mTrueBtn;
     private Button mFalseBtn;
+
     private ImageButton mPrevBtn;
     private ImageButton mNextBtn;
+
+    private Button mChectBtn;
+
     private TextView mQuestionTextView;
 
     private Question[] mQuestionBank = new Question[]{
@@ -32,7 +42,22 @@ public class QuizActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(this.TAG, "onCreate(Bundle) called");
         setContentView(R.layout.activity_quiz);
+
+        if(savedInstanceState != null){
+            mCurrentIndex = savedInstanceState.getInt(this.KEY_INDEX, 0);
+        }
+
+        this.mChectBtn = findViewById(R.id.cheat_btn);
+        this.mChectBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
+                Intent intent = CheatActivity.newIntent(QuizActivity.this, answerIsTrue);
+                startActivity(intent);
+            }
+        });
 
         this.mTrueBtn = findViewById(R.id.true_btn);
         this.mFalseBtn = findViewById(R.id.false_btn);
@@ -79,18 +104,79 @@ public class QuizActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+        Log.d(this.TAG, "onStart() called");
+    }
+
+    @Override
+    public void onResume(){
+        super.onResume();
+        Log.d(this.TAG, "onResume() called");
+    }
+
+    @Override
+    public void onPause(){
+        super.onPause();
+        Log.d(this.TAG, "onPause() called");
+    }
+
+    @Override
+    public void onStop(){
+        super.onStop();
+        Log.d(this.TAG, "onStop() called");
+    }
+
+    @Override
+    public void onDestroy(){
+        super.onDestroy();
+        Log.d(this.TAG, "onDestroy() called");
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanseState){
+        super.onSaveInstanceState(savedInstanseState);
+        Log.i(this.TAG, "onSaveInstanceState(Bundle) called");
+        savedInstanseState.putInt(this.KEY_INDEX, this.mCurrentIndex);
+    }
+
     private void nextQuestion(){
-        this.updateQuestionIndex(1);
-        this.updateQuestion();
+        if(this.updateQuestionIndex(1)) {
+            this.updateQuestion();
+            this.enableAnswerBtn();
+        }
     }
 
     private void prevQuestion(){
-        this.updateQuestionIndex(-1);
-        this.updateQuestion();
+
+        if(this.updateQuestionIndex(-1)) {
+            this.updateQuestion();
+            this.enableAnswerBtn();
+        }
     }
 
-    private void updateQuestionIndex(int value){
-        mCurrentIndex = (mCurrentIndex + value) % mQuestionBank.length;
+    private void disableAnswerBtn(){
+        this.mTrueBtn.setEnabled(false);
+        this.mFalseBtn.setEnabled(false);
+    }
+
+    private void enableAnswerBtn(){
+        this.mTrueBtn.setEnabled(true);
+        this.mFalseBtn.setEnabled(true);
+    }
+
+    private boolean updateQuestionIndex(int value){
+        boolean result = false;
+
+        if(mCurrentIndex < (mQuestionBank.length-1)) {
+            mCurrentIndex = (mCurrentIndex + value);
+            result = true;
+        }else {
+            endQuiz();
+        }
+
+        return  result;
     }
 
     private void updateQuestion(){
@@ -105,10 +191,27 @@ public class QuizActivity extends AppCompatActivity {
 
         if(answerIsTrue == userPressedTrue){
             messageResId = R.string.correct_toast;
+            this.mQuestionBank[this.mCurrentIndex].setCorrect(true);
         }else{
             messageResId = R.string.incorrect_toast;
+            this.mQuestionBank[this.mCurrentIndex].setCorrect(false);
         }
 
+        this.disableAnswerBtn();
+
         Toast.makeText(this, messageResId, Toast.LENGTH_SHORT).show();
+    }
+
+    private void endQuiz(){
+        int correct = 0;
+
+        for(Question q : this.mQuestionBank){
+            if(q.isCorrect()) correct++;
+        }
+        String tempMsg = getString(R.string.result);
+        String msg = String.format(tempMsg, correct, this.mQuestionBank.length);
+
+
+        Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
     }
 }
