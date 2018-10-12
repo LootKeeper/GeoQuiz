@@ -4,6 +4,16 @@ public class Question {
     private int mTextResId;
     private boolean mAnswerTrue;
 
+    public boolean isWasCheated() {
+        return mWasCheated;
+    }
+
+    public void setWasCheated(boolean wasCheated) {
+        mWasCheated = wasCheated;
+    }
+
+    private boolean mWasCheated;
+
     public boolean isCorrect() {
         return mIsCorrect;
     }
